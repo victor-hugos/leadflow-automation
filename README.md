@@ -32,7 +32,7 @@ This project solves that by standardizing lead validation, deduplication, scorin
   - resilient webhook integration (`sent`, `failed`, `skipped`)
 - Lead list endpoint (`GET /leads`) sorted by most recent first.
 - Optional lead listing filter: `GET /leads?priority=high`.
-- Cross-origin support on `/leads` endpoints for local frontend testing.
+- Limited cross-origin handling is implemented on `/leads` (`GET`, `POST`, `OPTIONS`) to support local frontend testing.
 - Structured operational logging for the full lead processing lifecycle.
 
 ## Tech Stack
