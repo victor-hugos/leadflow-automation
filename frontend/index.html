@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Leadflow Automation</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="layout">
+      <header class="hero">
+        <p class="eyebrow">Leadflow Automation</p>
+        <h1>Lead Processing Console</h1>
+        <p class="subtitle">
+          Submit leads, inspect processing output, and review saved records with
+          optional priority filtering.
+        </p>
+      </header>
+
+      <section class="panel">
+        <h2>Register Lead</h2>
+        <p class="section-copy">Required fields: name and email.</p>
+
+        <form id="lead-form" novalidate>
+          <div class="grid">
+            <label>
+              Name *
+              <input id="name" name="name" type="text" required />
+            </label>
+
+            <label>
+              Email *
+              <input id="email" name="email" type="email" required />
+            </label>
+
+            <label>
+              Phone
+              <input id="phone" name="phone" type="text" />
+            </label>
+
+            <label>
+              Company
+              <input id="company" name="company" type="text" />
+            </label>
+
+            <label>
+              Role
+              <input id="role" name="role" type="text" />
+            </label>
+
+            <label>
+              Source
+              <input id="source" name="source" type="text" />
+            </label>
+          </div>
+
+          <label class="api-url">
+            API Base URL
+            <input id="api-base-url" type="text" value="http://127.0.0.1:8000" />
+          </label>
+
+          <button type="submit" id="submit-button">Submit Lead</button>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h2>Response</h2>
+        <p class="section-copy">Latest backend response from POST /leads.</p>
+        <div class="result-wrap">
+          <span id="result-status" class="badge neutral">Waiting</span>
+          <pre id="result-body">No request yet.</pre>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Saved Leads</h2>
+        <p class="section-copy">Fetch all leads or filter by priority.</p>
+        <div class="toolbar">
+          <select id="priority-filter">
+            <option value="">All priorities</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+          <button id="load-leads-button" type="button">Load Leads</button>
+        </div>
+        <pre id="leads-body">No list request yet.</pre>
+      </section>
+    </main>
+
+    <script>
+      const form = document.getElementById("lead-form");
+      const submitButton = document.getElementById("submit-button");
+      const resultStatus = document.getElementById("result-status");
+      const resultBody = document.getElementById("result-body");
+      const leadsBody = document.getElementById("leads-body");
+      const loadLeadsButton = document.getElementById("load-leads-button");
+
+      function getApiBaseUrl() {
+        return document.getElementById("api-base-url").value.trim().replace(/\/+$/, "");
+      }
+
+      function setResponseState(statusCode, payload, ok) {
+        resultStatus.textContent = `HTTP ${statusCode}`;
+        resultStatus.className = `badge ${ok ? "success" : "error"}`;
+        resultBody.textContent = JSON.stringify(payload, null, 2);
+      }
+
+      function getFormPayload() {
+        const payload = {
+          name: document.getElementById("name").value,
+          email: document.getElementById("email").value,
+          phone: document.getElementById("phone").value,
+          company: document.getElementById("company").value,
+          role: document.getElementById("role").value,
+          source: document.getElementById("source").value,
+        };
+
+        Object.keys(payload).forEach((key) => {
+          if (typeof payload[key] === "string") {
+            payload[key] = payload[key].trim();
+          }
+          if (payload[key] === "") {
+            delete payload[key];
+          }
+        });
+
+        return payload;
+      }
+
+      async function parseJsonSafe(response) {
+        try {
+          return await response.json();
+        } catch (error) {
+          return { message: "Unable to parse JSON response." };
+        }
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        submitButton.disabled = true;
+        submitButton.textContent = "Processing...";
+
+        const payload = getFormPayload();
+        const endpoint = `${getApiBaseUrl()}/leads`;
+
+        try {
+          const response = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const body = await parseJsonSafe(response);
+          setResponseState(response.status, body, response.ok);
+        } catch (error) {
+          setResponseState(0, { message: "Request failed", error: String(error) }, false);
+        } finally {
+          submitButton.disabled = false;
+          submitButton.textContent = "Submit Lead";
+        }
+      });
+
+      loadLeadsButton.addEventListener("click", async () => {
+        loadLeadsButton.disabled = true;
+        loadLeadsButton.textContent = "Loading...";
+
+        const priority = document.getElementById("priority-filter").value;
+        const query = priority ? `?priority=${encodeURIComponent(priority)}` : "";
+        const endpoint = `${getApiBaseUrl()}/leads${query}`;
+
+        try {
+          const response = await fetch(endpoint);
+          const body = await parseJsonSafe(response);
+          leadsBody.textContent = JSON.stringify(body, null, 2);
+        } catch (error) {
+          leadsBody.textContent = JSON.stringify(
+            { message: "List request failed", error: String(error) },
+            null,
+            2
+          );
+        } finally {
+          loadLeadsButton.disabled = false;
+          loadLeadsButton.textContent = "Load Leads";
+        }
+      });
+    </script>
+  </body>
+</html>
