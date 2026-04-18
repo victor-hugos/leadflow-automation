@@ -1,27 +1,38 @@
 # Leadflow Automation
 
+Leadflow Automation is a portfolio-focused project that demonstrates how to build a reliable lead processing pipeline with clear architecture, practical validation rules, and resilient integrations.
+
 ## Overview
-Leadflow Automation is a portfolio-ready backend automation project focused on lead intake, qualification, persistence, and external integration.  
-It demonstrates practical software engineering patterns with FastAPI, SQLite, layered services, resilient webhook handling, and a lightweight frontend.
+This project receives leads from form/API input, validates business rules, prevents duplicates, computes qualification score and priority, persists data in SQLite, and attempts webhook delivery without losing the saved lead.
 
 ## Problem Solved
-Teams often receive leads from different channels but lack a consistent and automated processing pipeline.  
-This project solves that by standardizing lead validation, deduplication, scoring, prioritization, storage, and webhook dispatch in one clean flow.
+Sales and operations teams often collect leads from multiple channels but process them manually or inconsistently.  
+This project solves that by standardizing the full lead lifecycle in a single API workflow:
+- Input normalization and validation
+- Duplicate protection
+- Objective lead scoring and prioritization
+- Reliable persistence first, external webhook second
+- Operational visibility through logs
 
-## Solution Architecture
-- `FastAPI` for API endpoints and request orchestration.
-- Layered services for separated responsibilities:
-  - business validation
-  - deduplication
-  - scoring
-  - priority classification
-  - repository persistence
-  - webhook integration
+## Proposed Solution
+The solution uses a layered FastAPI design where each responsibility lives in a dedicated service:
+- Business validation
+- Duplicate lookup
+- Score calculation
+- Priority classification
+- Repository persistence
+- Webhook dispatch
+
+This keeps route handlers thin and the system easy to evolve.
+
+## Architecture At A Glance
+- `FastAPI` for API and request orchestration.
 - `SQLite` for local persistence (`data/leadflow.db`).
-- File-based logging (`logs/app.log`) with operational events.
-- Simple HTML/CSS frontend for lead submission and lead listing.
+- Service layer for business rules and integrations.
+- Structured file logging (`logs/app.log`).
+- Simple frontend served by the same app (`/`) for local portfolio demos.
 
-## 🔄 Automation Flow
+## Automation Flow
 
 ```mermaid
 flowchart LR
@@ -34,26 +45,33 @@ flowchart LR
     G --> H[API Response]
 ```
 
-## Main Features
+## Key Features
 - Health check endpoint.
-- Lead intake endpoint (`POST /leads`) with:
+- Lead processing endpoint (`POST /leads`) with:
   - structural validation (FastAPI/Pydantic)
   - business validation
-  - case-insensitive duplicate check
+  - case-insensitive duplicate detection by email
   - score and priority calculation
-  - lead persistence in SQLite
-  - resilient webhook integration (`sent`, `failed`, `skipped`)
-- Lead list endpoint (`GET /leads`) sorted by most recent first.
-- Optional lead listing filter: `GET /leads?priority=high`.
-- Limited cross-origin handling is implemented on `/leads` (`GET`, `POST`, `OPTIONS`) to support local frontend testing.
-- Structured operational logging for the full lead processing lifecycle.
+  - SQLite persistence
+  - webhook result status (`sent`, `failed`, `skipped`)
+- Lead listing endpoint (`GET /leads`) ordered from newest to oldest.
+- Optional priority filter (`GET /leads?priority=high`).
+- Limited cross-origin handling on `/leads` (`GET`, `POST`, `OPTIONS`) for local frontend testing.
+- Basic automated API coverage for core flows (`tests/test_leads.py`).
+
+## Portfolio Differentiators
+- Separation of concerns with route orchestration and service-specific logic.
+- Failure-tolerant webhook behavior: integration errors do not lose persisted leads.
+- Reproducible local setup with `.env.example`.
+- Clear, testable business flow with automated baseline coverage.
 
 ## Tech Stack
 - Backend: Python + FastAPI
 - Database: SQLite
-- Frontend: HTML, CSS, Vanilla JavaScript
-- HTTP/Webhook client: Python standard library (`urllib`)
+- Frontend: HTML + CSS + Vanilla JavaScript
+- HTTP client for webhook: Python standard library (`urllib`)
 - Logging: Python `logging` + `RotatingFileHandler`
+- Tests: `unittest` + FastAPI `TestClient`
 
 ## Project Structure
 ```text
@@ -79,13 +97,29 @@ leadflow-automation/
 |   +-- main.py
 +-- data/
 |   +-- leadflow.db
++-- docs/
+|   +-- images/
+|       +-- .gitkeep
 +-- frontend/
 |   +-- index.html
 |   +-- styles.css
 +-- logs/
 |   +-- app.log
++-- tests/
+|   +-- test_leads.py
++-- .env.example
 +-- requirements.txt
 ```
+
+## Configuration
+To enable webhook integration, set the environment variable:
+
+`LEAD_WEBHOOK_URL=http://your-webhook-url`
+
+If this variable is not set, webhook dispatch is skipped.
+
+For local setup reference, use:
+- `.env.example`
 
 ## How To Run Locally
 ### 1. Install dependencies
@@ -93,12 +127,7 @@ leadflow-automation/
 python -m pip install -r requirements.txt
 ```
 
-### 2. Run API
-```bash
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
-```
-
-### 3. Optional: configure webhook URL
+### 2. Optional: configure webhook URL
 ```bash
 # Linux/macOS
 export LEAD_WEBHOOK_URL="http://127.0.0.1:9000/webhook"
@@ -107,47 +136,43 @@ export LEAD_WEBHOOK_URL="http://127.0.0.1:9000/webhook"
 $env:LEAD_WEBHOOK_URL="http://127.0.0.1:9000/webhook"
 ```
 
-### 4. Run frontend
+### 3. Run the application
 ```bash
-python -m http.server 5500 --directory frontend
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
-Open: `http://127.0.0.1:5500`
 
-## ⚙️ Configuration
-
-To enable webhook integration, set the environment variable:
-
-`LEAD_WEBHOOK_URL=http://your-webhook-url`
-
-If not set, the webhook will be skipped.
+### 4. Open the app
+- Frontend: `http://127.0.0.1:8000`
+- Health check: `http://127.0.0.1:8000/health`
 
 ## API Endpoints
 - `GET /health`  
   Returns service status.
 
 - `POST /leads`  
-  Receives and processes a lead.
+  Processes a lead and returns `score`, `priority`, and `webhook_status`.
 
 - `GET /leads`  
-  Lists saved leads from most recent to oldest.
+  Returns leads sorted from most recent to oldest.
 
 - `GET /leads?priority=high`  
-  Lists saved leads filtered by `high`, `medium`, or `low`.
+  Returns leads filtered by `low`, `medium`, or `high`.
 
-## Lead Scoring Rules
+## Lead Qualification Rules
+### Scoring
 - Corporate email: `+20`
 - Phone provided: `+10`
 - Company provided: `+20`
 - Role provided: `+10`
 
-Public email domains considered non-corporate include:
+Public domains treated as non-corporate:
 - `gmail.com`
 - `hotmail.com`
 - `outlook.com`
 - `yahoo.com`
 - `yahoo.com.br`
 
-## Priority Rules
+### Priority
 - `0 to 20` -> `low`
 - `21 to 40` -> `medium`
 - `41+` -> `high`
@@ -178,8 +203,7 @@ curl -X POST "http://127.0.0.1:8000/leads" \
 }
 ```
 
-## 📸 Screenshots
-
+## Screenshots
 ### Lead Submission Form
 ![Frontend Form](docs/images/frontend-form.png)
 
@@ -189,6 +213,6 @@ curl -X POST "http://127.0.0.1:8000/leads" \
 ## Future Improvements
 - Add authentication and role-based access.
 - Add pagination and search for `GET /leads`.
-- Add automated test suite (unit + integration).
+- Expand automated tests (edge cases and integration scenarios).
 - Add retry queue/dead-letter strategy for webhook delivery.
 - Add containerization and CI pipeline for deployment readiness.
