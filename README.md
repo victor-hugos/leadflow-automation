@@ -21,6 +21,19 @@ This project solves that by standardizing lead validation, deduplication, scorin
 - File-based logging (`logs/app.log`) with operational events.
 - Simple HTML/CSS frontend for lead submission and lead listing.
 
+## 🔄 Automation Flow
+
+```mermaid
+flowchart LR
+    A[Form / API Input] --> B[Business Validation]
+    B --> C[Duplicate Check]
+    C --> D[Score Calculation]
+    D --> E[Priority Classification]
+    E --> F[SQLite Persistence]
+    F --> G[Webhook Dispatch]
+    G --> H[API Response]
+```
+
 ## Main Features
 - Health check endpoint.
 - Lead intake endpoint (`POST /leads`) with:
