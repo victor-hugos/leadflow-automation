@@ -113,6 +113,14 @@ python -m http.server 5500 --directory frontend
 ```
 Open: `http://127.0.0.1:5500`
 
+## ⚙️ Configuration
+
+To enable webhook integration, set the environment variable:
+
+`LEAD_WEBHOOK_URL=http://your-webhook-url`
+
+If not set, the webhook will be skipped.
+
 ## API Endpoints
 - `GET /health`  
   Returns service status.
