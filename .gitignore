@@ -13,9 +13,12 @@ logs/*.log
 logs/webhook_received.json
 
 # Local data
+data/test_db_*
 data/*.db
 data/*.sqlite
 data/*.sqlite3
+!data/leadflow.db
+!data/.gitkeep
 
 # Tooling
 .pytest_cache/
