@@ -157,6 +157,14 @@ curl -X POST "http://127.0.0.1:8000/leads" \
 }
 ```
 
+## 📸 Screenshots
+
+### Lead Submission Form
+![Frontend Form](docs/images/frontend-form.png)
+
+### Leads Listing
+![Leads List](docs/images/leads-list.png)
+
 ## Future Improvements
 - Add authentication and role-based access.
 - Add pagination and search for `GET /leads`.
