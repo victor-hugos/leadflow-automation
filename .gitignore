@@ -10,6 +10,7 @@ env/
 
 # Logs
 logs/*.log
+logs/webhook_received.json
 
 # Local data
 data/*.db
