@@ -208,7 +208,7 @@ curl -X POST "http://127.0.0.1:8000/leads" \
 ![Frontend Form](docs/images/frontend-form.png)
 
 ### Leads Listing
-![Leads List](docs/images/leads-list.png)
+_Screenshot pending update_
 
 ## Future Improvements
 - Add authentication and role-based access.
